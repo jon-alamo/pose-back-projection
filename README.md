@@ -39,6 +39,19 @@ The input `DataFrame` must contain columns following this convention for each pl
 
 Keypoints supported: `nose`, `left_eye`, `right_eye`, `left_ear`, `right_ear`, `left_shoulder`, `right_shoulder`, `left_elbow`, `right_elbow`, `left_wrist`, `right_wrist`, `left_hip`, `right_hip`, `left_knee`, `right_knee`, `left_ankle`, `right_ankle`.
 
+## Output Data Format
+
+The output is a pandas DataFrame identical to the input but with additional columns for the 3D coordinates.
+
+For each player identifier and for each of the 17 keypoints, three columns are added:
+- `player_<id>_<keypoint>_3d_x`
+- `player_<id>_<keypoint>_3d_y`
+- `player_<id>_<keypoint>_3d_z`
+
+### Coordinate System and Units
+- **Reference Frame**: The 3D poses are **centered at the root** (the midpoint between the left and right hip). This means the coordinate $(0, 0, 0)$ corresponds to the player's mid-hip position for every frame.
+- **Scale/Units**: The coordinates are inferred from 2D keypoints that have been normalized relative to the bounding box dimensions (-1 to 1). Therefore, the 3D units are **relative** and dimensionless (not absolute meters). They represent the reconstructed 3D structure scaled proportionally to the player's size in the image.
+
 ## Checkpoints
 
 The package includes pre-trained weights (`pretrained_h36m_cpn.bin`) which are automatically loaded.
