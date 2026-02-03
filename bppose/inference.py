@@ -77,7 +77,8 @@ def back_projection_from_coco17(df: pd.DataFrame, player_ids: list) -> pd.DataFr
         raise FileNotFoundError(f"Checkpoint not found at {checkpoint_path}. Please verify package installation.")
         
     # Load Model
-    model = TemporalModel(17, 2, 17, filter_widths=[3, 3, 3, 3, 3], causal=False, dropout=0.25, channels=1024)
+    # The checkpoint corresponds to a model with 8 convolution layers (4 blocks).
+    model = TemporalModel(17, 2, 17, filter_widths=[3, 3, 3, 3], causal=False, dropout=0.25, channels=1024)
     
     try:
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -93,6 +94,9 @@ def back_projection_from_coco17(df: pd.DataFrame, player_ids: list) -> pd.DataFr
     # We work on a copy to avoid unintended side effects on the input DF if not desired,
     # and to ensure we return the full augmented dataset.
     result_df = df.copy()
+    
+    # Dictionary to collect new 3D columns to avoid DataFrame fragmentation
+    new_3d_columns = {}
     
     keypoints_order = [
         'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
@@ -125,8 +129,13 @@ def back_projection_from_coco17(df: pd.DataFrame, player_ids: list) -> pd.DataFr
         
         # 5. Populate Result
         for i, kp in enumerate(keypoints_order):
-            result_df[f"{prefix}_{kp}_3d_x"] = output_3d[:, i, 0]
-            result_df[f"{prefix}_{kp}_3d_y"] = output_3d[:, i, 1]
-            result_df[f"{prefix}_{kp}_3d_z"] = output_3d[:, i, 2]
+            new_3d_columns[f"{prefix}_{kp}_3d_x"] = output_3d[:, i, 0]
+            new_3d_columns[f"{prefix}_{kp}_3d_y"] = output_3d[:, i, 1]
+            new_3d_columns[f"{prefix}_{kp}_3d_z"] = output_3d[:, i, 2]
+            
+    # Concatenate all new columns
+    if new_3d_columns:
+        new_df = pd.DataFrame(new_3d_columns, index=result_df.index)
+        result_df = pd.concat([result_df, new_df], axis=1)
             
     return result_df
